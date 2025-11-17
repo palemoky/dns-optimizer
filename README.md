@@ -1,6 +1,6 @@
 # DNS Optimizer 🚀
 
-[![Go Cross-Platform Build](https://github.com/palemoky/dns-optimizer/actions/workflows/build.yml/badge.svg)](https://github.com/palemoky/dns-optimizer/actions)
+[![Go Cross-Platform Build](https://github.com/palemoky/dns-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/palemoky/dns-optimizer/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/palemoky/dns-optimizer)](https://goreportcard.com/report/github.com/palemoky/dns-optimizer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
