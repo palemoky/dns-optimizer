@@ -3,7 +3,6 @@
 # DNS Pick
 
 [![Go Cross-Platform Build](https://github.com/palemoky/dnspick/actions/workflows/ci.yml/badge.svg)](https://github.com/palemoky/dnspick/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/palemoky/dnspick)](https://goreportcard.com/report/github.com/palemoky/dnspick)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Pick the DNS that fits you
