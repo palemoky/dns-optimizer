@@ -97,13 +97,11 @@ func Run(opts Options, progress func(domain string)) []Result {
 	var wg sync.WaitGroup
 
 	for _, server := range servers {
-		wg.Add(1)
-		go func(s Server) {
-			defer wg.Done()
+		wg.Go(func() {
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			benchmarkServer(s, opts, resultsChan, progress)
-		}(server)
+			benchmarkServer(server, opts, resultsChan, progress)
+		})
 	}
 
 	wg.Wait()
