@@ -4,6 +4,7 @@
 package dnsbench
 
 import (
+	"net"
 	"net/url"
 	"strings"
 )
@@ -132,6 +133,17 @@ func ParseServers(raw string) []Server {
 	return servers
 }
 
+func normalizeHost(host string) string {
+	if len(host) >= 2 && host[0] == '[' && host[len(host)-1] == ']'{
+		unbracketed := host[1 : len(host)-1]
+		if net.ParseIP(unbracketed) != nil {
+			return unbracketed
+		}
+	}
+
+	return host
+}
+
 // parseServer turns a single user-supplied entry into a Server.
 func parseServer(entry string) (Server, bool) {
 	switch {
@@ -145,15 +157,16 @@ func parseServer(entry string) (Server, bool) {
 		return Server{Name: customName(hostOf(entry), DOH), Address: entry, Protocol: DOH}, true
 
 	case strings.HasPrefix(entry, "tls://"):
-		host := strings.TrimPrefix(entry, "tls://")
+		host := normalizeHost(strings.TrimPrefix(entry, "tls://"))
 		return Server{Name: customName(host, DOT), Address: host, Protocol: DOT}, true
 
 	case strings.HasPrefix(entry, "udp://"):
-		host := strings.TrimPrefix(entry, "udp://")
+		host := normalizeHost(strings.TrimPrefix(entry, "udp://"))
 		return Server{Name: customName(host, UDP), Address: host, Protocol: UDP}, true
 
 	default:
-		return Server{Name: customName(entry, UDP), Address: entry, Protocol: UDP}, true
+		host := normalizeHost(entry)
+		return Server{Name: customName(host, UDP), Address: host, Protocol: UDP}, true
 	}
 }
 

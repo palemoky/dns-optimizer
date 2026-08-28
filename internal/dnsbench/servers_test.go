@@ -26,3 +26,36 @@ func TestParseServersEmpty(t *testing.T) {
 		t.Fatalf("expected empty, got %v", got)
 	}
 }
+
+func TestParseServersIPv6(t *testing.T) {
+	got := ParseServers(
+		"2606:4700:4700::1111, udp://[2001:4860:4860::8888], [2620:fe::fe]",
+	)
+
+	want := []Server{
+		{
+			Name:     "2606:4700:4700::1111 (UDP)",
+			Address:  "2606:4700:4700::1111",
+			Protocol: UDP,
+		},
+		{
+			Name:     "2001:4860:4860::8888 (UDP)",
+			Address:  "2001:4860:4860::8888",
+			Protocol: UDP,
+		},
+		{
+			Name:     "2620:fe::fe (UDP)",
+			Address:  "2620:fe::fe",
+			Protocol: UDP,
+		},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %d servers %v, want %d", len(got), got, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("server %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
