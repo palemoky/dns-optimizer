@@ -87,7 +87,7 @@ var en = &Messages{
 	CmdUpdateShort:  "Check for and update to the latest version",
 
 	FlagDomains:     "Comma-separated custom domains to test (defaults to the built-in domestic/foreign list)",
-	FlagServers:     "Comma-separated custom DNS servers to test, e.g. \"1.1.1.1, tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\" (defaults to the built-in list)",
+	FlagServers:     "Comma-separated custom DNS servers to test, e.g. \"1.1.1.1, 2606:4700:4700::1111, udp://[2001:4860:4860::8888], tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\" (defaults to the built-in list)",
 	FlagQueries:     "Number of queries per domain",
 	FlagTimeout:     "Timeout per query",
 	FlagConcurrency: "Maximum number of servers tested concurrently",
@@ -139,7 +139,7 @@ var zh = &Messages{
 	CmdUpdateShort:  "检查并更新到最新版本",
 
 	FlagDomains:     "自定义测试域名列表，以逗号分隔（默认使用内置国内/国外域名）",
-	FlagServers:     "自定义 DNS 服务器列表，以逗号分隔，例如 \"1.1.1.1, tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\"（默认使用内置列表）",
+	FlagServers:     "自定义 DNS 服务器列表，以逗号分隔，例如 \"1.1.1.1, 2606:4700:4700::1111, udp://[2001:4860:4860::8888], tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\"（默认使用内置列表）",
 	FlagQueries:     "每个域名的查询次数",
 	FlagTimeout:     "单次查询超时时间",
 	FlagConcurrency: "同时测试的服务器数量上限",
