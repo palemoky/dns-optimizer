@@ -85,6 +85,16 @@ var DefaultServers = []Server{
 	{Name: "OpenDNS 2 (UDP)", Address: "208.67.220.220", Protocol: UDP},
 	{Name: "Quad9 (UDP)", Address: "9.9.9.9", Protocol: UDP},
 
+	// Plain DNS over IPv6.
+	{Name: "AliDNS 1 IPv6 (UDP)", Address: "2400:3200::1", Protocol: UDP},
+	{Name: "AliDNS 2 IPv6 (UDP)", Address: "2400:3200:baba::1", Protocol: UDP},
+	{Name: "Google 1 IPv6 (UDP)", Address: "2001:4860:4860::8888", Protocol: UDP},
+	{Name: "Google 2 IPv6 (UDP)", Address: "2001:4860:4860::8844", Protocol: UDP},
+	{Name: "Cloudflare 1 IPv6 (UDP)", Address: "2606:4700:4700::1111", Protocol: UDP},
+	{Name: "Cloudflare 2 IPv6 (UDP)", Address: "2606:4700:4700::1001", Protocol: UDP},
+	{Name: "Quad9 1 IPv6 (UDP)", Address: "2620:fe::fe", Protocol: UDP},
+	{Name: "Quad9 2 IPv6 (UDP)", Address: "2620:fe::9", Protocol: UDP},
+
 	{Name: "AliDNS (DoT)", Address: "dns.alidns.com", Protocol: DOT},
 	{Name: "DNSPod (DoT)", Address: "dot.pub", Protocol: DOT},
 	{Name: "Google (DoT)", Address: "dns.google", Protocol: DOT},
@@ -134,7 +144,7 @@ func ParseServers(raw string) []Server {
 }
 
 func normalizeHost(host string) string {
-	if len(host) >= 2 && host[0] == '[' && host[len(host)-1] == ']'{
+	if len(host) >= 2 && host[0] == '[' && host[len(host)-1] == ']' {
 		unbracketed := host[1 : len(host)-1]
 		if net.ParseIP(unbracketed) != nil {
 			return unbracketed
