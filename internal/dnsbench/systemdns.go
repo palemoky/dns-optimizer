@@ -2,7 +2,7 @@ package dnsbench
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -32,7 +32,10 @@ func buildSystemServers(ips []string, nameSingle, nameFmt string) []Server {
 	var servers []Server
 	for _, ip := range ips {
 		ip = strings.TrimSpace(ip)
-		if ip == "" || net.ParseIP(ip) == nil {
+		if ip == "" {
+			continue
+		}
+		if _, err := netip.ParseAddr(ip); err != nil {
 			continue
 		}
 		if _, ok := seen[ip]; ok {

@@ -64,3 +64,37 @@ func TestBuildSystemServers(t *testing.T) {
 		t.Fatalf("expected nil, got %v", got)
 	}
 }
+
+func TestBuildSystemServersIPv6(t *testing.T) {
+	const nameSingle = "System DNS"
+	const nameFmt = "System DNS %d"
+
+	got := buildSystemServers([]string{
+		"2001:4860:4860::8888",
+		"fe80::1%eth0",
+	}, nameSingle, nameFmt)
+
+	want := []Server{
+		{
+			Name:     "System DNS 1",
+			Address:  "2001:4860:4860::8888",
+			Protocol: UDP,
+			IsSystem: true,
+		},
+		{
+			Name:     "System DNS 2",
+			Address:  "fe80::1%eth0",
+			Protocol: UDP,
+			IsSystem: true,
+		},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %d servers %+v, want %d", len(got), got, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("server %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
