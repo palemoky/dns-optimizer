@@ -99,3 +99,29 @@ func TestBuildSystemServersIPv6(t *testing.T) {
 		}
 	}
 }
+
+func TestParseWindowsDNSOutput(t *testing.T) {
+	got := parseWindowsDNSOutput(`
+202.38.64.18
+fec0:0:0:ffff::1
+fec0:0:0:ffff::2
+202.38.64.56
+fec0:0:0:ffff::3
+2606:4700:4700::1111
+`)
+
+	want := []string{
+		"202.38.64.18",
+		"202.38.64.56",
+		"2606:4700:4700::1111",
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("address %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}

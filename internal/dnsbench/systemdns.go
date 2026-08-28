@@ -72,5 +72,21 @@ func windowsDNS() []string {
 	if err != nil {
 		return nil
 	}
-	return strings.Fields(string(out))
+	return parseWindowsDNSOutput(string(out))
+}
+
+// parseWindowsDNSOutput removes the legacy site-local DNS addresses that
+// Windows automatically adds to some IPv6 interfaces.
+func parseWindowsDNSOutput(out string) []string {
+	var addresses []string
+	for address := range strings.FieldsSeq(out) {
+		switch strings.ToLower(address) {
+		case "fec0:0:0:ffff::1",
+			"fec0:0:0:ffff::2",
+			"fec0:0:0:ffff::3":
+			continue
+		}
+		addresses = append(addresses, address)
+	}
+	return addresses
 }
