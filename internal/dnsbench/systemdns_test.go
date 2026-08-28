@@ -10,6 +10,7 @@ func TestSystemDNSFromResolvConf(t *testing.T) {
 	content := `# comment
 nameserver 192.168.1.1
 nameserver 8.8.8.8
+nameserver 2001:4860:4860::8888
 options ndots:2
 `
 	path := filepath.Join(t.TempDir(), "resolv.conf")
@@ -18,7 +19,7 @@ options ndots:2
 	}
 
 	got := systemDNSFromResolvConf(path)
-	want := []string{"192.168.1.1", "8.8.8.8"}
+	want := []string{"192.168.1.1", "8.8.8.8", "2001:4860:4860::8888"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}

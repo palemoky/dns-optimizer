@@ -64,10 +64,10 @@ func systemDNSFromResolvConf(path string) []string {
 	return cfg.Servers
 }
 
-// windowsDNS reads the currently effective IPv4 DNS servers via PowerShell (best-effort).
+// windowsDNS reads the currently effective IPv4 and IPv6 DNS servers via PowerShell (best-effort).
 func windowsDNS() []string {
 	cmd := exec.Command("powershell", "-NoProfile", "-Command",
-		"(Get-DnsClientServerAddress -AddressFamily IPv4).ServerAddresses")
+		"(Get-DnsClientServerAddress).ServerAddresses")
 	out, err := cmd.Output()
 	if err != nil {
 		return nil
