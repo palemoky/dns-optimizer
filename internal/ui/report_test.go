@@ -131,6 +131,24 @@ func TestSystemDNSVerdict(t *testing.T) {
 			t.Fatalf("good-enough verdict should not include private note; got %q", msg)
 		}
 	})
+
+	t.Run("scoped link-local IPv6 system DNS switch includes note", func(t *testing.T) {
+		sys := mk("sys", 25, 1.0, true)
+		sys.Address = "fe80::1%eth0"
+
+		res := []dnsbench.Result{
+			mk("A", 5, 1.0, false),
+			sys,
+		}
+
+		msg, ok := systemDNSVerdict(res)
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if !strings.Contains(msg, "internal") {
+			t.Fatalf("expected internal DNS note for scoped link-local IPv6; got %q", msg)
+		}
+	})
 }
 
 // displayAddress should make the protocol obvious for DoT (which is otherwise a
@@ -138,7 +156,7 @@ func TestSystemDNSVerdict(t *testing.T) {
 // already-scheme'd DoH URLs untouched.
 func TestDisplayAddress(t *testing.T) {
 	cases := []struct {
-		protocol       dnsbench.Protocol
+		protocol      dnsbench.Protocol
 		address, want string
 	}{
 		{dnsbench.UDP, "8.8.8.8", "8.8.8.8"},

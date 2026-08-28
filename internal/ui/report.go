@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"os"
 	"strings"
 	"time"
@@ -187,13 +187,17 @@ func evalSystemDNS(results []dnsbench.Result) (systemEval, bool) {
 }
 
 // isInternalDNS reports whether addr is a local/internal resolver: an RFC 1918
-// or RFC 4193 private address, or a loopback address. Loopback covers stub
-// resolvers such as systemd-resolved's 127.0.0.53, which forward to an upstream
-// (often VPN/corporate) DNS, so switching away from them can also break internal
-// name resolution.
+// or RFC 4193 private address, a loopback address, or an IPv6 link-local
+// address. Loopback covers stub resolvers such as systemd-resolved's
+// 127.0.0.53, which forward to an upstream (often VPN/corporate) DNS, so
+// switching away from them can also break internal name resolution. Scoped
+// IPv6 literals such as fe80::1%eth0 are accepted.
 func isInternalDNS(addr string) bool {
-	ip := net.ParseIP(strings.TrimSpace(addr))
-	return ip != nil && (ip.IsPrivate() || ip.IsLoopback())
+	ip, err := netip.ParseAddr(strings.TrimSpace(addr))
+	if err != nil {
+		return false
+	}
+	return ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast()
 }
 
 // displayAddress renders a server address for human-facing output. DoT servers
