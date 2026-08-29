@@ -113,13 +113,18 @@ func runBenchmark(cmd *cobra.Command, args []string) error {
 	}
 
 	// Servers: the custom list when -s is given, otherwise the built-in list;
+	// filtered by the available IP address families.
 	// in both cases the system default DNS is appended unless disabled.
-	servers := dnsbench.DefaultServers
+	var servers []dnsbench.Server
 	if cmd.Flags().Changed("servers") {
 		servers = dnsbench.ParseServers(serversStr)
 		if len(servers) == 0 {
 			return fmt.Errorf("%s", m.ErrNoServers)
 		}
+	} else {
+		servers = dnsbench.DefaultServersForNetwork(
+			dnsbench.DetectNetworkCapabilities(),
+		)
 	}
 	if !noSystemDNS {
 		if sys := dnsbench.DetectSystemDNS(m.SystemDNSName, m.SystemDNSNameN); len(sys) > 0 {

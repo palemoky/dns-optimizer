@@ -1,6 +1,9 @@
 package dnsbench
 
-import "testing"
+import (
+	"net/netip"
+	"testing"
+)
 
 func TestParseServers(t *testing.T) {
 	got := ParseServers(" 1.1.1.1 , udp://8.8.8.8, tls://dns.google , https://cloudflare-dns.com/dns-query , h3://dns.alidns.com/dns-query ,, 1.1.1.1 ")
@@ -86,5 +89,67 @@ func TestDefaultServersIncludeIPv6(t *testing.T) {
 		if got != expected {
 			t.Errorf("server %q = %+v, want %+v", expected.Name, got, expected)
 		}
+	}
+}
+
+// Filter IPv6, keep IPv4 and hostname-based servers
+func TestDefaultServersForIPv4Only(t *testing.T) {
+	got := DefaultServersForNetwork(NetworkCapabilities{
+		IPv4: true,
+		IPv6: false,
+	})
+
+	foundIPv4 := false
+	foundHostname := false
+
+	for _, server := range got {
+		addr, err := netip.ParseAddr(server.Address)
+		if err == nil && addr.Is6() {
+			t.Errorf("IPv4-only defaults contain IPv6 server %+v", server)
+		}
+		if server.Address == "1.1.1.1" {
+			foundIPv4 = true
+		}
+		if server.Address == "https://dns.google/dns-query" {
+			foundHostname = true
+		}
+	}
+
+	if !foundIPv4 {
+		t.Error("IPv4-only defaults removed IPv4 servers")
+	}
+	if !foundHostname {
+		t.Error("IPv4-only defaults removed hostname-based servers")
+	}
+}
+
+func TestDefaultServersForIPv6Only(t *testing.T) {
+	got := DefaultServersForNetwork(NetworkCapabilities{
+		IPv4: false,
+		IPv6: true,
+	})
+
+	foundIPv6 := false
+	foundHostname := false
+
+	for _, server := range got {
+		addr, err := netip.ParseAddr(server.Address)
+		if err == nil && addr.Is4() {
+			t.Errorf("IPv6-only defaults contain IPv4 server %+v", server)
+		}
+
+		if server.Address == "2606:4700:4700::1111" {
+			foundIPv6 = true
+		}
+		if server.Address == "https://dns.google/dns-query" {
+			foundHostname = true
+		}
+	}
+
+	if !foundIPv6 {
+		t.Error("IPv6-only defaults removed IPv6 servers")
+	}
+	if !foundHostname {
+		t.Error("IPv6-only defaults removed hostname-based servers")
 	}
 }
