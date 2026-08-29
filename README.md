@@ -174,7 +174,6 @@ dnspick -s "2606:4700:4700::1111,udp://[2001:4860:4860::8888]"
 | `--lang`          |       | `$LANG`       | UI language: `en` or `zh` (defaults to the system `LANG` environment variable) |
 | `--json`          |       | `false`       | Output machine-readable JSON to stdout (suppresses the progress UI)         |
 
-
 IPv6 literals can be passed directly or enclosed in brackets when using the `udp://` scheme.
 
 ---
