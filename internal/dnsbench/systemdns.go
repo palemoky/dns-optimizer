@@ -80,10 +80,7 @@ func windowsDNS() []string {
 func parseWindowsDNSOutput(out string) []string {
 	var addresses []string
 	for address := range strings.FieldsSeq(out) {
-		switch strings.ToLower(address) {
-		case "fec0:0:0:ffff::1",
-			"fec0:0:0:ffff::2",
-			"fec0:0:0:ffff::3":
+		if addr, err := netip.ParseAddr(address); err == nil && siteLocalV6.Contains(addr) {
 			continue
 		}
 		addresses = append(addresses, address)
