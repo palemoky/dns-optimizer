@@ -1,8 +1,10 @@
 package dnsbench
 
-import "net/netip"
-import "net"
-import "sync"
+import (
+	"net"
+	"net/netip"
+	"sync"
+)
 
 // NetworkCapabilities describes which IP address families are usable.
 type NetworkCapabilities struct {

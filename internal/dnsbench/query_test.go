@@ -133,3 +133,57 @@ func TestDohQuery(t *testing.T) {
 		}
 	})
 }
+
+func TestSelectResolvedHostForIPv6OnlyNetwork(t *testing.T) {
+	got := selectResolvedHost(
+		[]string{
+			"192.0.2.1",
+			"2001:db8::1",
+		},
+		NetworkCapabilities{
+			IPv4: false,
+			IPv6: true,
+		},
+	)
+
+	want := "2001:db8::1"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestSelectResolvedHostForIPv4OnlyNetwork(t *testing.T) {
+	got := selectResolvedHost(
+		[]string{
+			"2001:db8::1",
+			"192.0.2.1",
+		},
+		NetworkCapabilities{
+			IPv4: true,
+			IPv6: false,
+		},
+	)
+
+	want := "192.0.2.1"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestSelectResolvedHostForDualStackNetwork(t *testing.T) {
+	got := selectResolvedHost(
+		[]string{
+			"2001:db8::1",
+			"192.0.2.1",
+		},
+		NetworkCapabilities{
+			IPv4: true,
+			IPv6: true,
+		},
+	)
+
+	want := "192.0.2.1"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
