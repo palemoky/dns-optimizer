@@ -153,3 +153,48 @@ func TestDefaultServersForIPv6Only(t *testing.T) {
 		t.Error("IPv6-only defaults removed hostname-based servers")
 	}
 }
+
+// Equivalent spellings of one server must collapse into a single entry, so a
+// bracketed IPv6 literal is not benchmarked twice alongside its bare form.
+func TestParseServersDeduplicatesEquivalentSpellings(t *testing.T) {
+	got := ParseServers(
+		"2606:4700:4700::1111, udp://[2606:4700:4700::1111], [2606:4700:4700::1111]",
+	)
+
+	want := []Server{
+		{
+			Name:     "2606:4700:4700::1111 (UDP)",
+			Address:  "2606:4700:4700::1111",
+			Protocol: UDP,
+		},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %d servers %+v, want %d", len(got), got, len(want))
+	}
+	if got[0] != want[0] {
+		t.Errorf("server = %+v, want %+v", got[0], want[0])
+	}
+}
+
+// The same address under different protocols is not a duplicate.
+func TestParseServersKeepsSameHostAcrossProtocols(t *testing.T) {
+	got := ParseServers("dns.google, tls://dns.google")
+
+	if len(got) != 2 {
+		t.Fatalf("got %d servers %+v, want 2", len(got), got)
+	}
+	if got[0].Protocol != UDP || got[1].Protocol != DOT {
+		t.Errorf("got protocols %q/%q, want udp/dot", got[0].Protocol, got[1].Protocol)
+	}
+}
+
+// A probe that detects neither family is more likely to be wrong than to
+// describe a host that truly cannot reach anything, so the full list is kept.
+func TestDefaultServersForNoDetectedFamily(t *testing.T) {
+	got := DefaultServersForNetwork(NetworkCapabilities{})
+
+	if len(got) != len(DefaultServers) {
+		t.Fatalf("got %d servers, want the full list of %d", len(got), len(DefaultServers))
+	}
+}

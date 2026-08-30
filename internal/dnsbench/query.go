@@ -170,6 +170,10 @@ func dohQuery(client *http.Client, endpoint, domain string) error {
 	return nil
 }
 
+// selectResolvedHost picks the address to dial from a hostname's resolved
+// addresses, preferring a family the local network can actually reach. IPv4
+// wins on a dual-stack host because it is the more widely reachable path for
+// the public resolvers tested here.
 func selectResolvedHost(
 	addrs []string,
 	capabilities NetworkCapabilities,
@@ -197,8 +201,9 @@ func selectResolvedHost(
 	return ""
 }
 
-// resolveHost resolves a hostname to an IP address, preferring IPv4; if it is
-// already an IP or resolution fails, it is returned unchanged.
+// resolveHost resolves a hostname to an IP address of a family the local
+// network supports; if it is already an IP or resolution fails, it is returned
+// unchanged.
 func resolveHost(host string, timeout time.Duration) string {
 	if _, err := netip.ParseAddr(host); err == nil {
 		return host

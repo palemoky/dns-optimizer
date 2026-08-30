@@ -132,13 +132,19 @@ func ParseServers(raw string) []Server {
 		if entry == "" {
 			continue
 		}
-		if _, ok := seen[entry]; ok {
+		s, ok := parseServer(entry)
+		if !ok {
 			continue
 		}
-		seen[entry] = struct{}{}
-		if s, ok := parseServer(entry); ok {
-			servers = append(servers, s)
+		// Deduplicate on the parsed result rather than the raw text, so that
+		// equivalent spellings of one server collapse into a single entry
+		// (e.g. "2606:4700:4700::1111" and "udp://[2606:4700:4700::1111]").
+		key := string(s.Protocol) + "|" + s.Address
+		if _, dup := seen[key]; dup {
+			continue
 		}
+		seen[key] = struct{}{}
+		servers = append(servers, s)
 	}
 	return servers
 }

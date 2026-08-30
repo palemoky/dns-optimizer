@@ -112,9 +112,9 @@ func runBenchmark(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", m.ErrNoDomains)
 	}
 
-	// Servers: the custom list when -s is given, otherwise the built-in list;
-	// filtered by the available IP address families.
-	// in both cases the system default DNS is appended unless disabled.
+	// Servers: the custom list when -s is given, otherwise the built-in list
+	// filtered down to the IP address families this host can reach; in both
+	// cases the system default DNS is appended unless disabled.
 	var servers []dnsbench.Server
 	if cmd.Flags().Changed("servers") {
 		servers = dnsbench.ParseServers(serversStr)
