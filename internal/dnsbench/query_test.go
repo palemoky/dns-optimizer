@@ -45,8 +45,11 @@ func TestReusableExchange(t *testing.T) {
 		if err != nil {
 			t.Fatalf("query %d: %v", i, err)
 		}
-		if d <= 0 {
-			t.Fatalf("query %d: non-positive duration %v", i, d)
+		// Only a negative duration is wrong. Windows derives its monotonic clock
+		// from the interrupt timer, which advances in ticks of up to 15.6ms, so a
+		// loopback query that finishes inside one tick legitimately measures 0s.
+		if d < 0 {
+			t.Fatalf("query %d: negative duration %v", i, d)
 		}
 	}
 	if got := calls.Load(); got != 3 {
