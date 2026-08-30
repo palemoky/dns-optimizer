@@ -10,6 +10,7 @@ LDFLAGS := -s -w \
 	-X $(PKG).Version=$(VERSION) \
 	-X $(PKG).Commit=$(COMMIT) \
 	-X $(PKG).Date=$(DATE)
+GO_BUILD_ENV := CGO_ENABLED=0
 
 # Cross-compilation target platforms: GOOS/GOARCH
 PLATFORMS := \
@@ -36,7 +37,7 @@ help:
 
 ## Build the binary for the host platform
 build:
-	go build -ldflags="$(LDFLAGS)" -o $(APP_NAME) .
+	$(GO_BUILD_ENV) go build -trimpath -ldflags="$(LDFLAGS)" -o $(APP_NAME) .
 
 ## Cross-compile all platforms into builds/
 build-all: clean
@@ -46,7 +47,7 @@ build-all: clean
 		out="$(BUILD_DIR)/$(APP_NAME)-$$os-$$arch"; \
 		if [ "$$os" = "windows" ]; then out="$$out.exe"; fi; \
 		echo "--> building $$os/$$arch"; \
-		GOOS=$$os GOARCH=$$arch go build -ldflags="$(LDFLAGS)" -o "$$out" . || exit 1; \
+		$(GO_BUILD_ENV) GOOS=$$os GOARCH=$$arch go build -trimpath -ldflags="$(LDFLAGS)" -o "$$out" . || exit 1; \
 	done
 	@echo "All builds completed in ./$(BUILD_DIR)"
 
