@@ -13,29 +13,48 @@ import (
 // change so they can guard on it.
 const jsonSchemaVersion = 2
 
+// NetworkInfo describes the address families detected on this host and how many
+// built-in servers were skipped because of them, so that a shorter-than-expected
+// server list is explainable rather than mysterious.
+type NetworkInfo struct {
+	IPv4           bool
+	IPv6           bool
+	SkippedServers int
+}
+
 // jsonReport is the top-level machine-readable benchmark output.
 type jsonReport struct {
 	Schema           int                `json:"schema"`
 	QueriesPerDomain int                `json:"queries_per_domain"`
 	ServersTested    int                `json:"servers_tested"`
 	DomainsTested    int                `json:"domains_tested"`
+	Network          *jsonNetwork       `json:"network,omitempty"`
 	Results          []jsonResult       `json:"results"`
 	Recommendation   jsonRecommendation `json:"recommendation"`
+}
+
+// jsonNetwork reports which address families were usable and how many built-in
+// servers were filtered out as a result. It is omitted when a custom server list
+// was supplied, since that list is never filtered.
+type jsonNetwork struct {
+	IPv4           bool `json:"ipv4"`
+	IPv6           bool `json:"ipv6"`
+	SkippedServers int  `json:"skipped_servers"`
 }
 
 // jsonResult is a single server's result. Latency is expressed in milliseconds
 // (rounded to microsecond precision) so consumers needn't parse Go durations.
 type jsonResult struct {
-	Rank         int     `json:"rank"`
-	Name         string  `json:"name"`
-	Address      string  `json:"address"`
+	Rank         int               `json:"rank"`
+	Name         string            `json:"name"`
+	Address      string            `json:"address"`
 	Protocol     dnsbench.Protocol `json:"protocol"`
-	IsSystem     bool    `json:"is_system"`
-	AvgLatencyMs float64 `json:"avg_latency_ms"`
-	SuccessRate  float64 `json:"success_rate"`
-	Successes    int     `json:"successes"`
-	Total        int     `json:"total"`
-	Score        float64 `json:"score"`
+	IsSystem     bool              `json:"is_system"`
+	AvgLatencyMs float64           `json:"avg_latency_ms"`
+	SuccessRate  float64           `json:"success_rate"`
+	Successes    int               `json:"successes"`
+	Total        int               `json:"total"`
+	Score        float64           `json:"score"`
 }
 
 type jsonRecommendation struct {
@@ -44,9 +63,9 @@ type jsonRecommendation struct {
 }
 
 type jsonTop struct {
-	Rank     int    `json:"rank"`
-	Name     string `json:"name"`
-	Address  string `json:"address"`
+	Rank     int               `json:"rank"`
+	Name     string            `json:"name"`
+	Address  string            `json:"address"`
 	Protocol dnsbench.Protocol `json:"protocol"`
 }
 
@@ -65,15 +84,24 @@ type jsonSystemVerdict struct {
 }
 
 // WriteJSON serializes the benchmark results as indented JSON to w. domains is the
-// number of domains tested; the rest of the metadata is derived from results,
-// which must be sorted by score in descending order.
-func WriteJSON(w io.Writer, results []dnsbench.Result, queriesPerDomain, domains int) error {
+// number of domains tested; network describes the address families detected for
+// the built-in server list and may be nil. The rest of the metadata is derived
+// from results, which must be sorted by score in descending order.
+func WriteJSON(w io.Writer, results []dnsbench.Result, queriesPerDomain, domains int, network *NetworkInfo) error {
 	rep := jsonReport{
 		Schema:           jsonSchemaVersion,
 		QueriesPerDomain: queriesPerDomain,
 		ServersTested:    len(results),
 		DomainsTested:    domains,
 		Results:          make([]jsonResult, len(results)),
+	}
+
+	if network != nil {
+		rep.Network = &jsonNetwork{
+			IPv4:           network.IPv4,
+			IPv6:           network.IPv6,
+			SkippedServers: network.SkippedServers,
+		}
 	}
 
 	for i, r := range results {
