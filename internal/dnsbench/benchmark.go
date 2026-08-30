@@ -21,7 +21,7 @@ var errUnreachable = errors.New("server unreachable; remaining queries skipped")
 
 // Options controls a single benchmark run.
 type Options struct {
-	Servers     []Server      // servers to test; uses network-compatible defaults when empty
+	Servers     []Server      // servers to test; required, an empty list yields no results
 	Domains     []Domain      // test domains
 	Queries     int           // number of queries per domain
 	Timeout     time.Duration // timeout per query
@@ -78,10 +78,6 @@ func ParseDomains(raw string) []Domain {
 // in descending order. progress is called after each completed query with that
 // query's domain (may be nil); it drives the live progress UI.
 func Run(opts Options, progress func(domain string)) []Result {
-	servers := opts.Servers
-	if len(servers) == 0 {
-		servers = DefaultServersForNetwork(DetectNetworkCapabilities())
-	}
 	if progress == nil {
 		progress = func(string) {}
 	}
@@ -91,12 +87,12 @@ func Run(opts Options, progress func(domain string)) []Result {
 	// (DoT/DoH) are reused and we avoid firing thousands of requests at once
 	// that would contend with each other and pollute the latency measurement.
 	// Server-level concurrency is bounded by sem.
-	totalQueries := len(servers) * len(opts.Domains) * opts.Queries
+	totalQueries := len(opts.Servers) * len(opts.Domains) * opts.Queries
 	resultsChan := make(chan queryResult, totalQueries)
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 
-	for _, server := range servers {
+	for _, server := range opts.Servers {
 		wg.Go(func() {
 			sem <- struct{}{}
 			defer func() { <-sem }()
