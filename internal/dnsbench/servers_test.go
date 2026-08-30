@@ -92,65 +92,71 @@ func TestDefaultServersIncludeIPv6(t *testing.T) {
 	}
 }
 
-// Filter IPv6, keep IPv4 and hostname-based servers
-func TestDefaultServersForIPv4Only(t *testing.T) {
-	got := DefaultServersForNetwork(NetworkCapabilities{
-		IPv4: true,
-		IPv6: false,
-	})
+// The built-in list is filtered down to the reachable address families, while
+// hostname-based servers survive either way because they can resolve to both.
+func TestDefaultServersForNetwork(t *testing.T) {
+	const hostname = "https://dns.google/dns-query"
 
-	foundIPv4 := false
-	foundHostname := false
-
-	for _, server := range got {
-		addr, err := netip.ParseAddr(server.Address)
-		if err == nil && addr.Is6() {
-			t.Errorf("IPv4-only defaults contain IPv6 server %+v", server)
-		}
-		if server.Address == "1.1.1.1" {
-			foundIPv4 = true
-		}
-		if server.Address == "https://dns.google/dns-query" {
-			foundHostname = true
-		}
+	tests := []struct {
+		name         string
+		capabilities NetworkCapabilities
+		excluded     func(netip.Addr) bool // literal addresses that must be gone
+		mustKeep     []string
+		wantFullList bool
+	}{
+		{
+			name:         "IPv4-only drops IPv6 literals",
+			capabilities: NetworkCapabilities{IPv4: true},
+			excluded:     netip.Addr.Is6,
+			mustKeep:     []string{"1.1.1.1", hostname},
+		},
+		{
+			name:         "IPv6-only drops IPv4 literals",
+			capabilities: NetworkCapabilities{IPv6: true},
+			excluded:     netip.Addr.Is4,
+			mustKeep:     []string{"2606:4700:4700::1111", hostname},
+		},
+		{
+			name:         "dual stack keeps everything",
+			capabilities: NetworkCapabilities{IPv4: true, IPv6: true},
+			mustKeep:     []string{"1.1.1.1", "2606:4700:4700::1111", hostname},
+			wantFullList: true,
+		},
+		{
+			// A probe that detects neither family is likelier to be wrong than
+			// to describe a host that truly reaches nothing, so nothing is cut.
+			name:         "no detected family keeps everything",
+			capabilities: NetworkCapabilities{},
+			mustKeep:     []string{"1.1.1.1", "2606:4700:4700::1111", hostname},
+			wantFullList: true,
+		},
 	}
 
-	if !foundIPv4 {
-		t.Error("IPv4-only defaults removed IPv4 servers")
-	}
-	if !foundHostname {
-		t.Error("IPv4-only defaults removed hostname-based servers")
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DefaultServersForNetwork(tt.capabilities)
 
-func TestDefaultServersForIPv6Only(t *testing.T) {
-	got := DefaultServersForNetwork(NetworkCapabilities{
-		IPv4: false,
-		IPv6: true,
-	})
+			if tt.wantFullList && len(got) != len(DefaultServers) {
+				t.Errorf("got %d servers, want the full list of %d", len(got), len(DefaultServers))
+			}
 
-	foundIPv6 := false
-	foundHostname := false
+			present := make(map[string]bool, len(got))
+			for _, server := range got {
+				present[server.Address] = true
+				if tt.excluded == nil {
+					continue
+				}
+				if addr, err := netip.ParseAddr(server.Address); err == nil && tt.excluded(addr) {
+					t.Errorf("server %+v should have been filtered out", server)
+				}
+			}
 
-	for _, server := range got {
-		addr, err := netip.ParseAddr(server.Address)
-		if err == nil && addr.Is4() {
-			t.Errorf("IPv6-only defaults contain IPv4 server %+v", server)
-		}
-
-		if server.Address == "2606:4700:4700::1111" {
-			foundIPv6 = true
-		}
-		if server.Address == "https://dns.google/dns-query" {
-			foundHostname = true
-		}
-	}
-
-	if !foundIPv6 {
-		t.Error("IPv6-only defaults removed IPv6 servers")
-	}
-	if !foundHostname {
-		t.Error("IPv6-only defaults removed hostname-based servers")
+			for _, address := range tt.mustKeep {
+				if !present[address] {
+					t.Errorf("server %q was dropped", address)
+				}
+			}
+		})
 	}
 }
 
@@ -186,15 +192,5 @@ func TestParseServersKeepsSameHostAcrossProtocols(t *testing.T) {
 	}
 	if got[0].Protocol != UDP || got[1].Protocol != DOT {
 		t.Errorf("got protocols %q/%q, want udp/dot", got[0].Protocol, got[1].Protocol)
-	}
-}
-
-// A probe that detects neither family is more likely to be wrong than to
-// describe a host that truly cannot reach anything, so the full list is kept.
-func TestDefaultServersForNoDetectedFamily(t *testing.T) {
-	got := DefaultServersForNetwork(NetworkCapabilities{})
-
-	if len(got) != len(DefaultServers) {
-		t.Fatalf("got %d servers, want the full list of %d", len(got), len(DefaultServers))
 	}
 }

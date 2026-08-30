@@ -134,56 +134,35 @@ func TestDohQuery(t *testing.T) {
 	})
 }
 
-func TestSelectResolvedHostForIPv6OnlyNetwork(t *testing.T) {
-	got := selectResolvedHost(
-		[]string{
-			"192.0.2.1",
-			"2001:db8::1",
-		},
-		NetworkCapabilities{
-			IPv4: false,
-			IPv6: true,
-		},
+// The address family a hostname resolves to must follow what the local network
+// can actually reach, with IPv4 preferred when both are available.
+func TestSelectResolvedHost(t *testing.T) {
+	const (
+		v4 = "192.0.2.1"
+		v6 = "2001:db8::1"
 	)
 
-	want := "2001:db8::1"
-	if got != want {
-		t.Fatalf("got %q, want %q", got, want)
+	tests := []struct {
+		name         string
+		addrs        []string
+		capabilities NetworkCapabilities
+		want         string
+	}{
+		{"IPv6-only network takes the AAAA", []string{v4, v6}, NetworkCapabilities{IPv6: true}, v6},
+		{"IPv4-only network takes the A", []string{v6, v4}, NetworkCapabilities{IPv4: true}, v4},
+		{"dual stack prefers IPv4", []string{v6, v4}, NetworkCapabilities{IPv4: true, IPv6: true}, v4},
+		// Neither family detected: the probe is likelier to be wrong than the
+		// host to be unreachable, so dial something rather than nothing.
+		{"no usable family falls back to the first address", []string{v6, v4}, NetworkCapabilities{}, v6},
+		{"nothing resolved", nil, NetworkCapabilities{IPv4: true}, ""},
 	}
-}
 
-func TestSelectResolvedHostForIPv4OnlyNetwork(t *testing.T) {
-	got := selectResolvedHost(
-		[]string{
-			"2001:db8::1",
-			"192.0.2.1",
-		},
-		NetworkCapabilities{
-			IPv4: true,
-			IPv6: false,
-		},
-	)
-
-	want := "192.0.2.1"
-	if got != want {
-		t.Fatalf("got %q, want %q", got, want)
-	}
-}
-
-func TestSelectResolvedHostForDualStackNetwork(t *testing.T) {
-	got := selectResolvedHost(
-		[]string{
-			"2001:db8::1",
-			"192.0.2.1",
-		},
-		NetworkCapabilities{
-			IPv4: true,
-			IPv6: true,
-		},
-	)
-
-	want := "192.0.2.1"
-	if got != want {
-		t.Fatalf("got %q, want %q", got, want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := selectResolvedHost(tt.addrs, tt.capabilities)
+			if got != tt.want {
+				t.Errorf("selectResolvedHost(%v, %+v) = %q, want %q", tt.addrs, tt.capabilities, got, tt.want)
+			}
+		})
 	}
 }
