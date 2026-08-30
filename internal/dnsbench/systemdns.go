@@ -75,6 +75,11 @@ func windowsDNS() []string {
 	return parseWindowsDNSOutput(string(out))
 }
 
+// siteLocalV6 is the deprecated IPv6 site-local range (RFC 3879). Windows
+// still auto-assigns fec0:0:0:ffff::1-3 as DNS servers on some interfaces even
+// when no such resolver exists.
+var siteLocalV6 = netip.MustParsePrefix("fec0::/10")
+
 // parseWindowsDNSOutput removes the legacy site-local DNS addresses that
 // Windows automatically adds to some IPv6 interfaces.
 func parseWindowsDNSOutput(out string) []string {
