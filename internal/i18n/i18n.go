@@ -48,6 +48,8 @@ type Messages struct {
 	ErrNoDomains    string
 	ErrNoServers    string
 	BenchStarting   string // "...%d DNS servers ... %d domains...\n\n"
+	NetworkNoIPv4   string // "...skipped %d built-in IPv4 servers...\n"
+	NetworkNoIPv6   string // "...skipped %d built-in IPv6 servers...\n"
 	ResultsHeader   string
 	RecommendHeader string
 
@@ -105,6 +107,8 @@ var en = &Messages{
 	ErrNoDomains:    "error: no valid domains to test.",
 	ErrNoServers:    "error: no valid servers to test.",
 	BenchStarting:   "dnspick: benchmarking %d DNS servers against %d domains...\n\n",
+	NetworkNoIPv4:   "dnspick: no IPv4 egress detected; skipped %d built-in IPv4 servers.\n",
+	NetworkNoIPv6:   "dnspick: no IPv6 egress detected; skipped %d built-in IPv6 servers.\n",
 	ResultsHeader:   "\n--- Benchmark Results ---",
 	RecommendHeader: "\n--- Top 3 Recommendations ---",
 
@@ -157,6 +161,8 @@ var zh = &Messages{
 	ErrNoDomains:    "错误: 没有有效的测试域名。",
 	ErrNoServers:    "错误: 没有有效的测试服务器。",
 	BenchStarting:   "DNS 选优工具: 开始对 %d 个 DNS 服务器、%d 个域名进行综合基准测试...\n\n",
+	NetworkNoIPv4:   "DNS 选优工具: 未检测到 IPv4 出口，已跳过 %d 个内置 IPv4 服务器。\n",
+	NetworkNoIPv6:   "DNS 选优工具: 未检测到 IPv6 出口，已跳过 %d 个内置 IPv6 服务器。\n",
 	ResultsHeader:   "\n--- 综合测试结果 ---",
 	RecommendHeader: "\n--- 最佳 DNS 推荐 (Top 3) ---",
 
