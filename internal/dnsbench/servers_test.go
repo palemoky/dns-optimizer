@@ -65,14 +65,14 @@ func TestParseServersIPv6(t *testing.T) {
 
 func TestDefaultServersIncludeIPv6(t *testing.T) {
 	want := []Server{
-		{Name: "AliDNS 1 IPv6 (UDP)", Address: "2400:3200::1", Protocol: UDP},
-		{Name: "AliDNS 2 IPv6 (UDP)", Address: "2400:3200:baba::1", Protocol: UDP},
-		{Name: "Google 1 IPv6 (UDP)", Address: "2001:4860:4860::8888", Protocol: UDP},
-		{Name: "Google 2 IPv6 (UDP)", Address: "2001:4860:4860::8844", Protocol: UDP},
-		{Name: "Cloudflare 1 IPv6 (UDP)", Address: "2606:4700:4700::1111", Protocol: UDP},
-		{Name: "Cloudflare 2 IPv6 (UDP)", Address: "2606:4700:4700::1001", Protocol: UDP},
-		{Name: "Quad9 1 IPv6 (UDP)", Address: "2620:fe::fe", Protocol: UDP},
-		{Name: "Quad9 2 IPv6 (UDP)", Address: "2620:fe::9", Protocol: UDP},
+		{Name: "AliDNS 1 (UDP/IPv6)", Address: "2400:3200::1", Protocol: UDP},
+		{Name: "AliDNS 2 (UDP/IPv6)", Address: "2400:3200:baba::1", Protocol: UDP},
+		{Name: "Google 1 (UDP/IPv6)", Address: "2001:4860:4860::8888", Protocol: UDP},
+		{Name: "Google 2 (UDP/IPv6)", Address: "2001:4860:4860::8844", Protocol: UDP},
+		{Name: "Cloudflare 1 (UDP/IPv6)", Address: "2606:4700:4700::1111", Protocol: UDP},
+		{Name: "Cloudflare 2 (UDP/IPv6)", Address: "2606:4700:4700::1001", Protocol: UDP},
+		{Name: "Quad9 1 (UDP/IPv6)", Address: "2620:fe::fe", Protocol: UDP},
+		{Name: "Quad9 2 (UDP/IPv6)", Address: "2620:fe::9", Protocol: UDP},
 	}
 
 	byName := make(map[string]Server, len(DefaultServers))
