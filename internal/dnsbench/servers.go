@@ -4,6 +4,7 @@
 package dnsbench
 
 import (
+	"net"
 	"net/url"
 	"strings"
 )
@@ -84,6 +85,16 @@ var DefaultServers = []Server{
 	{Name: "OpenDNS 2 (UDP)", Address: "208.67.220.220", Protocol: UDP},
 	{Name: "Quad9 (UDP)", Address: "9.9.9.9", Protocol: UDP},
 
+	// Plain DNS over IPv6.
+	{Name: "AliDNS 1 (UDP/IPv6)", Address: "2400:3200::1", Protocol: UDP},
+	{Name: "AliDNS 2 (UDP/IPv6)", Address: "2400:3200:baba::1", Protocol: UDP},
+	{Name: "Google 1 (UDP/IPv6)", Address: "2001:4860:4860::8888", Protocol: UDP},
+	{Name: "Google 2 (UDP/IPv6)", Address: "2001:4860:4860::8844", Protocol: UDP},
+	{Name: "Cloudflare 1 (UDP/IPv6)", Address: "2606:4700:4700::1111", Protocol: UDP},
+	{Name: "Cloudflare 2 (UDP/IPv6)", Address: "2606:4700:4700::1001", Protocol: UDP},
+	{Name: "Quad9 1 (UDP/IPv6)", Address: "2620:fe::fe", Protocol: UDP},
+	{Name: "Quad9 2 (UDP/IPv6)", Address: "2620:fe::9", Protocol: UDP},
+
 	{Name: "AliDNS (DoT)", Address: "dns.alidns.com", Protocol: DOT},
 	{Name: "DNSPod (DoT)", Address: "dot.pub", Protocol: DOT},
 	{Name: "Google (DoT)", Address: "dns.google", Protocol: DOT},
@@ -121,15 +132,32 @@ func ParseServers(raw string) []Server {
 		if entry == "" {
 			continue
 		}
-		if _, ok := seen[entry]; ok {
+		s, ok := parseServer(entry)
+		if !ok {
 			continue
 		}
-		seen[entry] = struct{}{}
-		if s, ok := parseServer(entry); ok {
-			servers = append(servers, s)
+		// Deduplicate on the parsed result rather than the raw text, so that
+		// equivalent spellings of one server collapse into a single entry
+		// (e.g. "2606:4700:4700::1111" and "udp://[2606:4700:4700::1111]").
+		key := string(s.Protocol) + "|" + s.Address
+		if _, dup := seen[key]; dup {
+			continue
 		}
+		seen[key] = struct{}{}
+		servers = append(servers, s)
 	}
 	return servers
+}
+
+func normalizeHost(host string) string {
+	if len(host) >= 2 && host[0] == '[' && host[len(host)-1] == ']' {
+		unbracketed := host[1 : len(host)-1]
+		if net.ParseIP(unbracketed) != nil {
+			return unbracketed
+		}
+	}
+
+	return host
 }
 
 // parseServer turns a single user-supplied entry into a Server.
@@ -145,15 +173,16 @@ func parseServer(entry string) (Server, bool) {
 		return Server{Name: customName(hostOf(entry), DOH), Address: entry, Protocol: DOH}, true
 
 	case strings.HasPrefix(entry, "tls://"):
-		host := strings.TrimPrefix(entry, "tls://")
+		host := normalizeHost(strings.TrimPrefix(entry, "tls://"))
 		return Server{Name: customName(host, DOT), Address: host, Protocol: DOT}, true
 
 	case strings.HasPrefix(entry, "udp://"):
-		host := strings.TrimPrefix(entry, "udp://")
+		host := normalizeHost(strings.TrimPrefix(entry, "udp://"))
 		return Server{Name: customName(host, UDP), Address: host, Protocol: UDP}, true
 
 	default:
-		return Server{Name: customName(entry, UDP), Address: entry, Protocol: UDP}, true
+		host := normalizeHost(entry)
+		return Server{Name: customName(host, UDP), Address: host, Protocol: UDP}, true
 	}
 }
 

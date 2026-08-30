@@ -99,6 +99,25 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// networkNotice explains why the built-in server list came out shorter than
+// usual. Without it a run on an IPv4-only host silently drops every IPv6 server
+// and simply looks broken. Returns "" when nothing was filtered out.
+func networkNotice(network *ui.NetworkInfo) string {
+	if network == nil || network.SkippedServers == 0 {
+		return ""
+	}
+
+	m := i18n.L()
+	switch {
+	case !network.IPv6:
+		return fmt.Sprintf(m.NetworkNoIPv6, network.SkippedServers)
+	case !network.IPv4:
+		return fmt.Sprintf(m.NetworkNoIPv4, network.SkippedServers)
+	default:
+		return ""
+	}
+}
+
 func runBenchmark(cmd *cobra.Command, args []string) error {
 	m := i18n.L()
 
@@ -112,13 +131,23 @@ func runBenchmark(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", m.ErrNoDomains)
 	}
 
-	// Servers: the custom list when -s is given, otherwise the built-in list;
-	// in both cases the system default DNS is appended unless disabled.
-	servers := dnsbench.DefaultServers
+	// Servers: the custom list when -s is given, otherwise the built-in list
+	// filtered down to the IP address families this host can reach; in both
+	// cases the system default DNS is appended unless disabled.
+	var servers []dnsbench.Server
+	var network *ui.NetworkInfo
 	if cmd.Flags().Changed("servers") {
 		servers = dnsbench.ParseServers(serversStr)
 		if len(servers) == 0 {
 			return fmt.Errorf("%s", m.ErrNoServers)
+		}
+	} else {
+		capabilities := dnsbench.DetectNetworkCapabilities()
+		servers = dnsbench.DefaultServersForNetwork(capabilities)
+		network = &ui.NetworkInfo{
+			IPv4:           capabilities.IPv4,
+			IPv6:           capabilities.IPv6,
+			SkippedServers: len(dnsbench.DefaultServers) - len(servers),
 		}
 	}
 	if !noSystemDNS {
@@ -138,15 +167,17 @@ func runBenchmark(cmd *cobra.Command, args []string) error {
 	// JSON mode: stdout carries only the JSON document, status goes to stderr,
 	// and the live progress UI is skipped so the output stays pipe-friendly.
 	if jsonOutput {
+		fmt.Fprint(os.Stderr, networkNotice(network))
 		fmt.Fprintf(os.Stderr, m.BenchStarting, len(servers), len(domains))
 		results := dnsbench.Run(opts, nil)
-		return ui.WriteJSON(os.Stdout, results, queriesPerDomain, len(domains))
+		return ui.WriteJSON(os.Stdout, results, queriesPerDomain, len(domains), network)
 	}
 
 	// Kick off a non-blocking check for a newer release; it runs concurrently
 	// with the benchmark and the notice (if any) is printed at the end.
 	updateCh := startUpdateCheck()
 
+	fmt.Print(networkNotice(network))
 	fmt.Printf(m.BenchStarting, len(servers), len(domains))
 
 	tracker := ui.NewStatusTracker(domains, len(servers), queriesPerDomain)

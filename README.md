@@ -25,6 +25,7 @@ Pick the DNS that fits you
 *   **Live categorized progress**: Domestic/foreign domains are laid out side by side, with per-domain progress updated in real time.
 *   **Bilingual UI**: Follows the system `LANG` by default, or switch manually with `--lang en|zh`.
 *   **Highly customizable**: Custom test domains, query count, timeout, concurrency and more.
+*   **IPv4 and IPv6**: Benchmarks DNS resolvers over either address family, including built-in IPv6 endpoints and custom IPv6 server addresses.
 
 ---
 
@@ -157,18 +158,23 @@ dnspick --lang zh
 
 # Example: emit machine-readable JSON (e.g. pipe into jq)
 dnspick --json | jq '.recommendation.top'
+
+# Benchmark custom IPv6 DNS servers
+dnspick -s "2606:4700:4700::1111,udp://[2001:4860:4860::8888]"
 ```
 
 | Flag              | Short | Default       | Description                                                                 |
 | ----------------- | ----- | ------------- | --------------------------------------------------------------------------- |
 | `--domains`       | `-d`  | built-in list | Comma-separated custom domains to test (deduplicated); falls back to the built-in domestic/foreign list |
-| `--servers`       | `-s`  | built-in list | Comma-separated custom DNS servers to test; protocol is inferred from the scheme (`1.1.1.1` → UDP, `tls://host` → DoT, `https://host/dns-query` → DoH, `h3://host/dns-query` → DoH3) |
+| `--servers`       | `-s`  | built-in list | Comma-separated custom DNS servers; protocol is inferred from the scheme (`1.1.1.1` or `2606:4700:4700::1111` → UDP, `udp://[2001:4860:4860::8888]` → UDP over IPv6, `tls://host` → DoT, `https://host/dns-query` → DoH, `h3://host/dns-query` → DoH3) |
 | `--queries`       | `-q`  | `3`           | Number of queries per domain                                                |
 | `--timeout`       | `-t`  | `2s`          | Timeout per query                                                           |
 | `--concurrency`   | `-c`  | `16`          | Maximum number of servers tested concurrently                               |
 | `--no-system-dns` |       | `false`       | Do not detect or test the current system default DNS                        |
 | `--lang`          |       | `$LANG`       | UI language: `en` or `zh` (defaults to the system `LANG` environment variable) |
 | `--json`          |       | `false`       | Output machine-readable JSON to stdout (suppresses the progress UI)         |
+
+IPv6 literals can be passed directly or enclosed in brackets when using the `udp://` scheme.
 
 ---
 

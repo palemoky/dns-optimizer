@@ -48,6 +48,8 @@ type Messages struct {
 	ErrNoDomains    string
 	ErrNoServers    string
 	BenchStarting   string // "...%d DNS servers ... %d domains...\n\n"
+	NetworkNoIPv4   string // "...skipped %d built-in IPv4 servers...\n"
+	NetworkNoIPv6   string // "...skipped %d built-in IPv6 servers...\n"
 	ResultsHeader   string
 	RecommendHeader string
 
@@ -87,7 +89,7 @@ var en = &Messages{
 	CmdUpdateShort:  "Check for and update to the latest version",
 
 	FlagDomains:     "Comma-separated custom domains to test (defaults to the built-in domestic/foreign list)",
-	FlagServers:     "Comma-separated custom DNS servers to test, e.g. \"1.1.1.1, tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\" (defaults to the built-in list)",
+	FlagServers:     "Comma-separated custom DNS servers to test, e.g. \"1.1.1.1, 2606:4700:4700::1111, udp://[2001:4860:4860::8888], tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\" (defaults to the built-in list)",
 	FlagQueries:     "Number of queries per domain",
 	FlagTimeout:     "Timeout per query",
 	FlagConcurrency: "Maximum number of servers tested concurrently",
@@ -105,6 +107,8 @@ var en = &Messages{
 	ErrNoDomains:    "error: no valid domains to test.",
 	ErrNoServers:    "error: no valid servers to test.",
 	BenchStarting:   "dnspick: benchmarking %d DNS servers against %d domains...\n\n",
+	NetworkNoIPv4:   "dnspick: no IPv4 egress detected; skipped %d built-in IPv4 servers.\n",
+	NetworkNoIPv6:   "dnspick: no IPv6 egress detected; skipped %d built-in IPv6 servers.\n",
 	ResultsHeader:   "\n--- Benchmark Results ---",
 	RecommendHeader: "\n--- Top 3 Recommendations ---",
 
@@ -139,7 +143,7 @@ var zh = &Messages{
 	CmdUpdateShort:  "检查并更新到最新版本",
 
 	FlagDomains:     "自定义测试域名列表，以逗号分隔（默认使用内置国内/国外域名）",
-	FlagServers:     "自定义 DNS 服务器列表，以逗号分隔，例如 \"1.1.1.1, tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\"（默认使用内置列表）",
+	FlagServers:     "自定义 DNS 服务器列表，以逗号分隔，例如 \"1.1.1.1, 2606:4700:4700::1111, udp://[2001:4860:4860::8888], tls://dns.google, https://dns.google/dns-query, h3://cloudflare-dns.com/dns-query\"（默认使用内置列表）",
 	FlagQueries:     "每个域名的查询次数",
 	FlagTimeout:     "单次查询超时时间",
 	FlagConcurrency: "同时测试的服务器数量上限",
@@ -156,7 +160,9 @@ var zh = &Messages{
 
 	ErrNoDomains:    "错误: 没有有效的测试域名。",
 	ErrNoServers:    "错误: 没有有效的测试服务器。",
-	BenchStarting:   "DNS 选优工具: 开始对 %d 个 DNS 服务器、%d 个域名进行综合基准测试...\n\n",
+	BenchStarting:   "dnspick: 开始对 %d 个 DNS 服务器、%d 个域名进行综合基准测试...\n\n",
+	NetworkNoIPv4:   "dnspick: 未检测到 IPv4 出口，已跳过 %d 个内置 IPv4 服务器。\n",
+	NetworkNoIPv6:   "dnspick: 未检测到 IPv6 出口，已跳过 %d 个内置 IPv6 服务器。\n",
 	ResultsHeader:   "\n--- 综合测试结果 ---",
 	RecommendHeader: "\n--- 最佳 DNS 推荐 (Top 3) ---",
 

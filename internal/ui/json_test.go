@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func TestWriteJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := WriteJSON(&buf, results, 3, 2); err != nil {
+	if err := WriteJSON(&buf, results, 3, 2, nil); err != nil {
 		t.Fatalf("WriteJSON: %v", err)
 	}
 
@@ -75,4 +76,46 @@ func TestLatencyMs(t *testing.T) {
 			t.Errorf("latencyMs(%v) = %v, want %v", tt.d, got, tt.want)
 		}
 	}
+}
+
+// The document must record why built-in servers were filtered out, and must omit
+// the field entirely when a custom server list bypassed filtering.
+func TestWriteJSONNetwork(t *testing.T) {
+	results := []dnsbench.Result{
+		{Name: "A", Address: "1.1.1.1", Protocol: dnsbench.UDP, AvgTime: time.Millisecond, SuccessRate: 1, Successes: 3, Total: 3, Score: 10},
+	}
+
+	t.Run("present", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := WriteJSON(&buf, results, 3, 2, &NetworkInfo{IPv4: true, SkippedServers: 8}); err != nil {
+			t.Fatalf("WriteJSON: %v", err)
+		}
+
+		var doc struct {
+			Network *struct {
+				IPv4           bool `json:"ipv4"`
+				IPv6           bool `json:"ipv6"`
+				SkippedServers int  `json:"skipped_servers"`
+			} `json:"network"`
+		}
+		if err := json.Unmarshal(buf.Bytes(), &doc); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if doc.Network == nil {
+			t.Fatal("network object missing")
+		}
+		if !doc.Network.IPv4 || doc.Network.IPv6 || doc.Network.SkippedServers != 8 {
+			t.Errorf("network = %+v, want {true false 8}", *doc.Network)
+		}
+	})
+
+	t.Run("omitted", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := WriteJSON(&buf, results, 3, 2, nil); err != nil {
+			t.Fatalf("WriteJSON: %v", err)
+		}
+		if strings.Contains(buf.String(), "network") {
+			t.Errorf("network key should be omitted, got %s", buf.String())
+		}
+	})
 }

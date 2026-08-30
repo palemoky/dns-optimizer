@@ -2,7 +2,7 @@ package dnsbench
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -32,7 +32,10 @@ func buildSystemServers(ips []string, nameSingle, nameFmt string) []Server {
 	var servers []Server
 	for _, ip := range ips {
 		ip = strings.TrimSpace(ip)
-		if ip == "" || net.ParseIP(ip) == nil {
+		if ip == "" {
+			continue
+		}
+		if _, err := netip.ParseAddr(ip); err != nil {
 			continue
 		}
 		if _, ok := seen[ip]; ok {
@@ -61,13 +64,31 @@ func systemDNSFromResolvConf(path string) []string {
 	return cfg.Servers
 }
 
-// windowsDNS reads the currently effective IPv4 DNS servers via PowerShell (best-effort).
+// windowsDNS reads the currently effective IPv4 and IPv6 DNS servers via PowerShell (best-effort).
 func windowsDNS() []string {
 	cmd := exec.Command("powershell", "-NoProfile", "-Command",
-		"(Get-DnsClientServerAddress -AddressFamily IPv4).ServerAddresses")
+		"(Get-DnsClientServerAddress).ServerAddresses")
 	out, err := cmd.Output()
 	if err != nil {
 		return nil
 	}
-	return strings.Fields(string(out))
+	return parseWindowsDNSOutput(string(out))
+}
+
+// siteLocalV6 is the deprecated IPv6 site-local range (RFC 3879). Windows
+// still auto-assigns fec0:0:0:ffff::1-3 as DNS servers on some interfaces even
+// when no such resolver exists.
+var siteLocalV6 = netip.MustParsePrefix("fec0::/10")
+
+// parseWindowsDNSOutput removes the legacy site-local DNS addresses that
+// Windows automatically adds to some IPv6 interfaces.
+func parseWindowsDNSOutput(out string) []string {
+	var addresses []string
+	for address := range strings.FieldsSeq(out) {
+		if addr, err := netip.ParseAddr(address); err == nil && siteLocalV6.Contains(addr) {
+			continue
+		}
+		addresses = append(addresses, address)
+	}
+	return addresses
 }

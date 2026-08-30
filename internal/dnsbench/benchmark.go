@@ -21,7 +21,7 @@ var errUnreachable = errors.New("server unreachable; remaining queries skipped")
 
 // Options controls a single benchmark run.
 type Options struct {
-	Servers     []Server      // servers to test; uses DefaultServers when empty
+	Servers     []Server      // servers to test; uses network-compatible defaults when empty
 	Domains     []Domain      // test domains
 	Queries     int           // number of queries per domain
 	Timeout     time.Duration // timeout per query
@@ -80,7 +80,7 @@ func ParseDomains(raw string) []Domain {
 func Run(opts Options, progress func(domain string)) []Result {
 	servers := opts.Servers
 	if len(servers) == 0 {
-		servers = DefaultServers
+		servers = DefaultServersForNetwork(DetectNetworkCapabilities())
 	}
 	if progress == nil {
 		progress = func(string) {}

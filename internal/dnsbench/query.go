@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/miekg/dns"
@@ -169,23 +170,52 @@ func dohQuery(client *http.Client, endpoint, domain string) error {
 	return nil
 }
 
-// resolveHost resolves a hostname to an IP address, preferring IPv4; if it is
-// already an IP or resolution fails, it is returned unchanged.
+// selectResolvedHost picks the address to dial from a hostname's resolved
+// addresses, preferring a family the local network can actually reach. IPv4
+// wins on a dual-stack host because it is the more widely reachable path for
+// the public resolvers tested here.
+func selectResolvedHost(
+	addrs []string,
+	capabilities NetworkCapabilities,
+) string {
+	if capabilities.IPv4 {
+		for _, candidate := range addrs {
+			addr, err := netip.ParseAddr(candidate)
+			if err == nil && addr.Is4() {
+				return candidate
+			}
+		}
+	}
+	if capabilities.IPv6 {
+		for _, candidate := range addrs {
+			addr, err := netip.ParseAddr(candidate)
+			if err == nil && addr.Is6() {
+				return candidate
+			}
+		}
+	}
+
+	if len(addrs) > 0 {
+		return addrs[0]
+	}
+	return ""
+}
+
+// resolveHost resolves a hostname to an IP address of a family the local
+// network supports; if it is already an IP or resolution fails, it is returned
+// unchanged.
 func resolveHost(host string, timeout time.Duration) string {
-	if net.ParseIP(host) != nil {
+	if _, err := netip.ParseAddr(host); err == nil {
 		return host
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
 	addrs, err := net.DefaultResolver.LookupHost(ctx, host)
 	if err != nil || len(addrs) == 0 {
 		return host
 	}
-	// Prefer an IPv4 address so the benchmark works on IPv4-only networks.
-	for _, a := range addrs {
-		if ip := net.ParseIP(a); ip != nil && ip.To4() != nil {
-			return a
-		}
-	}
-	return addrs[0]
+
+	return selectResolvedHost(addrs, DetectNetworkCapabilities())
 }

@@ -10,6 +10,7 @@ func TestSystemDNSFromResolvConf(t *testing.T) {
 	content := `# comment
 nameserver 192.168.1.1
 nameserver 8.8.8.8
+nameserver 2001:4860:4860::8888
 options ndots:2
 `
 	path := filepath.Join(t.TempDir(), "resolv.conf")
@@ -18,7 +19,7 @@ options ndots:2
 	}
 
 	got := systemDNSFromResolvConf(path)
-	want := []string{"192.168.1.1", "8.8.8.8"}
+	want := []string{"192.168.1.1", "8.8.8.8", "2001:4860:4860::8888"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -62,5 +63,65 @@ func TestBuildSystemServers(t *testing.T) {
 	// All invalid -> nil.
 	if got := buildSystemServers([]string{"", "x"}, nameSingle, nameFmt); got != nil {
 		t.Fatalf("expected nil, got %v", got)
+	}
+}
+
+func TestBuildSystemServersIPv6(t *testing.T) {
+	const nameSingle = "System DNS"
+	const nameFmt = "System DNS %d"
+
+	got := buildSystemServers([]string{
+		"2001:4860:4860::8888",
+		"fe80::1%eth0",
+	}, nameSingle, nameFmt)
+
+	want := []Server{
+		{
+			Name:     "System DNS 1",
+			Address:  "2001:4860:4860::8888",
+			Protocol: UDP,
+			IsSystem: true,
+		},
+		{
+			Name:     "System DNS 2",
+			Address:  "fe80::1%eth0",
+			Protocol: UDP,
+			IsSystem: true,
+		},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %d servers %+v, want %d", len(got), got, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("server %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParseWindowsDNSOutput(t *testing.T) {
+	got := parseWindowsDNSOutput(`
+202.38.64.18
+fec0:0:0:ffff::1
+fec0:0:0:ffff::2
+202.38.64.56
+fec0:0:0:ffff::3
+2606:4700:4700::1111
+`)
+
+	want := []string{
+		"202.38.64.18",
+		"202.38.64.56",
+		"2606:4700:4700::1111",
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("address %d = %q, want %q", i, got[i], want[i])
+		}
 	}
 }
