@@ -28,6 +28,7 @@ jobs:
       - name: Build and Package
         id: build-and-package
         env:
+          CGO_ENABLED: 0
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           PROJECT_NAME: ${{ github.event.repository.name }}
@@ -46,8 +47,9 @@ jobs:
           VERSION="${{ github.ref_name }}"
           COMMIT="$(git rev-parse --short HEAD)"
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          
           go build -trimpath \
-            -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.Date=${DATE}" \
+            -ldflags="-s -w -extldflags '-static' -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.Date=${DATE}" \
             -o "${BINARY_FINAL_NAME}" .
 
           if [ "${GOOS}" = "windows" ]; then
