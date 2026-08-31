@@ -28,6 +28,7 @@ jobs:
       - name: Build and Package
         id: build-and-package
         env:
+          CGO_ENABLED: 0
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           PROJECT_NAME: ${{ github.event.repository.name }}
